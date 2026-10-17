@@ -1,0 +1,58 @@
+resources:
+  jobs:
+    hospital_medallion_pipeline:
+      name: hospital_medallion_pipeline
+      max_concurrent_runs: 1
+      timeout_seconds: 3600
+      performance_target: STANDARD
+      queue:
+        enabled: true
+      email_notifications:
+        on_failure:
+          - azedine.zaaraoui@gmail.com
+      notification_settings:
+        no_alert_for_canceled_runs: true
+      schedule:
+        quartz_cron_expression: "46 0 6 * * ?"
+        timezone_id: Africa/Casablanca
+        pause_status: PAUSED
+
+      tasks:
+        - task_key: bronze_ingestion
+          max_retries: 1
+          notebook_task:
+            notebook_path: ../src/bronze/01_bronze_ingestion.ipynb
+
+        - task_key: silver_diagnosis
+          depends_on: [{ task_key: bronze_ingestion }]
+          max_retries: 1
+          notebook_task:
+            notebook_path: ../src/silver/01_diagnosis_silver.ipynb
+
+        - task_key: silver_hospital
+          depends_on: [{ task_key: bronze_ingestion }]
+          max_retries: 1
+          notebook_task:
+            notebook_path: ../src/silver/02_hospitals_silver.ipynb
+
+        - task_key: silver_patient
+          depends_on: [{ task_key: bronze_ingestion }]
+          max_retries: 1
+          notebook_task:
+            notebook_path: ../src/silver/03_patients_silver.ipynb
+
+        - task_key: silver_visit
+          depends_on: [{ task_key: bronze_ingestion }]
+          max_retries: 1
+          notebook_task:
+            notebook_path: ../src/silver/04_visits_silver.ipynb
+
+        - task_key: gold_kpi
+          depends_on:
+            - { task_key: silver_diagnosis }
+            - { task_key: silver_hospital }
+            - { task_key: silver_patient }
+            - { task_key: silver_visit }
+          max_retries: 1
+          notebook_task:
+            notebook_path: ../src/gold/01_gold_hospital_kpi.ipynb

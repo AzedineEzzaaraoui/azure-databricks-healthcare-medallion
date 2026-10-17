@@ -1,0 +1,12 @@
+bundle:
+  name: hospital_medallion
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-7405616396974172.12.azuredatabricks.net
