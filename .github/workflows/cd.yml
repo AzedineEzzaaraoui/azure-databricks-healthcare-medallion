@@ -1,0 +1,42 @@
+# CD : déploie le bundle en prod à chaque merge dans main
+name: CD - Deploy to prod
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}   # permet aussi un lancement manuel depuis GitHub
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false   # jamais deux déploiements prod en même temps
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_AUTH_TYPE: azure-cli
+      BUNDLE_VAR_notification_email: ${{ vars.NOTIFICATION_EMAIL }}
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Connexion Azure (OIDC, sans secret)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Installer Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Valider le bundle
+        run: databricks bundle validate -t prod
+
+      - name: Déployer en prod
+        run: databricks bundle deploy -t prod
