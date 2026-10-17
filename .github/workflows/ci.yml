@@ -1,0 +1,34 @@
+# CI : valide le bundle à chaque Pull Request vers main
+name: CI - Validate bundle
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write   # nécessaire pour OIDC (jeton GitHub -> Entra ID)
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_AUTH_TYPE: azure-cli
+      BUNDLE_VAR_notification_email: ${{ vars.NOTIFICATION_EMAIL }}
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Connexion Azure (OIDC, sans secret)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Installer Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Valider le bundle (cible prod)
+        run: databricks bundle validate -t prod
