@@ -4,9 +4,23 @@ bundle:
 include:
   - resources/*.yml
 
+variables:
+  notification_email:
+    description: Email qui reçoit les alertes d'échec du job
+
 targets:
   dev:
     mode: development
     default: true
     workspace:
       host: https://adb-7405616396974172.12.azuredatabricks.net
+    variables:
+      notification_email: ${workspace.current_user.userName}
+
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-7405616396974172.12.azuredatabricks.net
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      service_principal_name: e5f16b06-5cf0-4a40-b8fc-f65365d33450   # ID d'application (client) du robot
